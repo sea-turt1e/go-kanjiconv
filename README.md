@@ -20,8 +20,10 @@ The Python library is built on SudachiPy/SudachiDict. This Go port uses [kagome]
 
 ## Environment
 ```
-Go >= 1.24
+Go 1.27.3 (recommended) or Go 1.26.10
 ```
+
+`go.mod` declares `go 1.26.10` and `toolchain go1.27.3`. Later patch releases of the same lines (e.g. 1.27.4, 1.26.11) also work. See [Security: eMudhra CA compromise](#security-emudhra-ca-compromise) for why these versions are required.
 
 The bundled UniDic dictionary is embedded in the binary via `go:embed`/kagome and adds roughly 45MB to your binary size (no external downloads needed). If you need a smaller binary and can tolerate weaker proper-noun coverage, use the legacy IPA dictionary instead (`WithDict(ipa.Dict())` in the library, or `--dict ipa` on the CLI), which adds about 11MB.
 
@@ -183,6 +185,28 @@ fmt.Println(conv.ToHiragana("激を飛ばす"))
   - These are applied as a text substitution before tokenization, and take priority.
 
 Literal readings can also be inlined in the input text using square brackets, which bypass tokenization entirely: `"[テスト]です"` → `てすと/です`.
+
+## Security: eMudhra CA compromise
+
+The private keys of eight eMudhra intermediate CA certificates were compromised ([details](https://emudhra.we-have-a-problem.com/)). Go 1.27.3 and Go 1.26.10 are the releases that distrust them, so this project requires one of them:
+
+- **Minimum Go version**: `go.mod` declares `go 1.26.10`, so older toolchains either refuse to build the module or (with the default `GOTOOLCHAIN=auto`) download a newer one. Inside this repository, `toolchain go1.27.3` makes the `go` command use Go 1.27.3.
+- **Warning for other Go versions**: the CLI prints a warning to stderr when it was built with a Go version other than 1.27.3 or 1.26.10 (or a later patch release of those lines), such as 1.27.0–1.27.2 or 1.28.x. Library users can run the same check with `kanjiconv.GoVersionWarning()`, which returns `""` for supported versions:
+
+  ```go
+  if w := kanjiconv.GoVersionWarning(); w != "" {
+      log.Println(w)
+  }
+  ```
+
+  The library itself never prints anything.
+- **CI (GitHub Actions)**:
+  - Tests run on Go 1.26.10 and 1.27.3 with `GOTOOLCHAIN=local`, so each job uses exactly the version under test.
+  - Actions are pinned to full commit SHAs, and Dependabot keeps them up to date (with a 7-day cooldown).
+  - The `GITHUB_TOKEN` is read-only (`permissions: contents: read`), and `actions/checkout` does not persist credentials.
+  - Jobs have a timeout, and `govulncheck` (pinned version) checks for known vulnerabilities.
+
+go-kanjiconv makes no network connections itself. Other software on your machine may still need updating: curl, the GitHub CLI, Docker, Node.js, Python and so on. See the [page above](https://emudhra.we-have-a-problem.com/) for patched versions.
 
 ## License
 

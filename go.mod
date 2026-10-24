@@ -1,6 +1,8 @@
 module github.com/sea-turt1e/go-kanjiconv
 
-go 1.24.1
+go 1.26.10
+
+toolchain go1.27.3
 
 require (
 	github.com/ikawaha/kagome-dict v1.1.7

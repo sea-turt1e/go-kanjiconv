@@ -54,6 +54,10 @@ func reorderArgs(args []string) []string {
 }
 
 func run(args []string, stdout, stderr *os.File) int {
+	if w := kanjiconv.GoVersionWarning(); w != "" {
+		fmt.Fprintln(stderr, "kanjiconv: "+w)
+	}
+
 	args = reorderArgs(args)
 	fs := flag.NewFlagSet("kanjiconv", flag.ContinueOnError)
 	fs.SetOutput(stderr)
